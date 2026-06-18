@@ -1,15 +1,13 @@
 #!/bin/sh
 
-set -euo pipefail
+set -u
 
 trap '' INT TERM TSTP QUIT
 
+dmesg -n 1
+stty -echo
 
 FIFO="/run/usb-wiper-events"
-
-# Create FIFO if not exists
-
-[ -p "$FIFO" ] || mkfifo "$FIFO"
 
 show() {
 	clear
@@ -20,39 +18,65 @@ show() {
 	echo "$1"
 }
 
+show_next() {
+	echo "=============================="
+	echo
+	echo "$1"
+}
+
 wipe_device() {
 	DEVICE="$1"
 
-	$()$(
-		BASENAME=$(basename "$DEVICE")
+	BASENAME=$(basename "$DEVICE")
 
-		# Safety check: removable only
-		if [ "$(cat /sys/block/$BASENAME/removable)" != "1" ]; then
-			show "❌ Skipped non-removable: $DEVICE"
-			sleep 2
-			return
-		fi
+	# Safety check: removable only
+	if [ "$(cat /sys/block/$BASENAME/removable)" != "1" ]; then
+		show "❌ Skipped non-removable: $DEVICE"
+		sleep 2
+		return
+	fi
 
-		show "🔵 Detected: $DEVICE"
-		sleep 1
+	show "🔵 Detected: $DEVICE"
+	sleep 1
 
-		show "Wiping signatures..."
-		wipefs -a "$DEVICE"
-
-		show "Zeroing headers..."
-		dd if=/dev/zero of="$DEVICE" bs=1M count=10 status=none
-
-		show "Partitioning..."
-		parted -s "$DEVICE" mklabel msdos
-		parted -s "$DEVICE" mkpart primary fat32 1MiB 100%
-
-		show "Formatting..."
-		mkfs.vfat -F 32 "${DEVICE}1"
-
-		show "🟢 DONE: $DEVICE\nSafe to remove"
+	show_next "Wiping signatures..."
+	if ! wipefs -a "$DEVICE"; then
+		show_next "❌ Failed to wipe signatures"
 		sleep 3
-	)$()
+		return
+	fi
 
+	show_next "Zeroing headers..."
+	if ! dd if=/dev/zero of="$DEVICE" bs=1M count=10 status=none; then
+		show_next "❌ Failed to zero device"
+		sleep 3
+		return
+	fi
+
+	show_next "Partitioning..."
+	if ! parted -s "$DEVICE" mklabel msdos; then
+		show_next "❌ Failed to create partition table"
+		sleep 3
+		return
+	fi
+
+	if ! parted -s "$DEVICE" mkpart primary fat32 1MiB 100%; then
+		show_next "❌ Failed to create partition"
+		sleep 3
+		return
+	fi
+
+	sleep 1
+
+	show_next "Formatting..."
+	if ! mkfs.vfat -F 32 "${DEVICE}1"; then
+		show_next "❌ Failed to format partition"
+		sleep 3
+		return
+	fi
+
+	show_next "🟢 DONE: $DEVICE\nSafe to remove"
+	sleep 10
 }
 
 # Startup screen
