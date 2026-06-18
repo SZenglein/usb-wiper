@@ -5,7 +5,7 @@ set -u
 trap '' INT TERM TSTP QUIT
 
 dmesg -n 1
-stty -echo
+stty -F /dev/tty1 -echo
 
 FIFO="/run/usb-wiper-events"
 
