@@ -32,7 +32,7 @@ udevadm control --reload
 
 # --- Ensure UI is visible on tty1 ---
 
-systemctl disable --now getty@tty1 || true
+systemctl disable getty@tty1 
 
 # Login backdoor
 systemctl enable getty@tty2
