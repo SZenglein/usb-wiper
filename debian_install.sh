@@ -21,7 +21,7 @@ systemctl enable usb-wiper-ui.service
 # --- Create udev rule ---
 
 cat <<EOF > /etc/udev/rules.d/99-usb-wipe.rules
-ACTION=="add", SUBSYSTEM=="block", ENV{ID_BUS}=="usb", ATTR{removable}=="1", RUN+="/bin/sh -c 'echo /dev/%k > /tmp/usb-wiper-events'"
+ACTION=="add", SUBSYSTEM=="block", ENV{ID_BUS}=="usb", ATTR{removable}=="1", RUN+="/bin/sh -c 'echo /dev/%k > /run/usb-wiper-events'"
 EOF
 
 # --- Reload systemd + udev ---

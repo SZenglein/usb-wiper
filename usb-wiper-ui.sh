@@ -2,7 +2,10 @@
 
 set -euo pipefail
 
-FIFO="/tmp/usb-wiper-events"
+trap '' INT TERM TSTP QUIT
+
+
+FIFO="/run/usb-wiper-events"
 
 # Create FIFO if not exists
 
