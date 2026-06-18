@@ -1,0 +1,15 @@
+[Unit]
+Description=USB Wiper Persistent UI
+After=multi-user.target
+
+[Service]
+ExecStartPre=/usr/bin/mkfifo -m 666 /tmp/usb-wiper-events
+ExecStart=/usr/local/bin/usb-wiper-ui.sh
+Restart=always
+StandardInput=tty
+StandardOutput=tty
+TTYPath=/dev/tty1
+
+[Install]
+WantedBy=multi-user.target
+
